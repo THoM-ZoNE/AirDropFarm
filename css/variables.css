@@ -1,0 +1,24 @@
+:root {
+  --color-bg: #05060a;
+  --color-bg-alt: #0b0e17;
+  --color-surface: #10141f;
+  --color-surface-2: #161b2b;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-text: #e8ecf7;
+  --color-text-muted: #93a0bd;
+  --color-accent: #7c5cff;
+  --color-accent-2: #14f1c6;
+  --color-accent-gradient: linear-gradient(135deg, #7c5cff 0%, #14f1c6 100%);
+
+  --font-heading: 'Orbitron', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+
+  --shadow-glow: 0 0 40px rgba(124, 92, 255, 0.25);
+  --transition: 0.3s ease;
+
+  --container-width: 1180px;
+}

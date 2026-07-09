@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AirDropFarm | Automatikus Solana Airdrop</title>
+  <meta name="description" content="AirDropFarm - Automatikus Solana airdrop rendszer pump.fun token creator reward szétosztásához a holderek között.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/countdown.css">
+  <link rel="stylesheet" href="css/stats.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="icon" href="assets/icons/favicon.png" type="image/png">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header" id="header">
+    <div class="container header-inner">
+      <a href="#hero" class="logo">
+        <span class="logo-icon">💧</span>
+        <span class="logo-text">AirDrop<span class="accent">Farm</span></span>
+      </a>
+      <nav class="main-nav" id="mainNav">
+        <a href="#hero">Homepage</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#countdown">Countdown</a>
+        <a href="#stats">Statistics</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <a href="#stats" class="btn btn-primary nav-cta">Dashboard</a>
+      <button class="nav-toggle" id="navToggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="hero-bg" id="heroBg"></div>
+    <div class="hero-overlay"></div>
+    <div class="container hero-content">
+      <span class="badge">🚀 Solana • Automatic • Live</span>
+      <h1 class="hero-title">
+        Pump.fun Creator Reward, <span class="accent">automatic</span> to holders
+      </h1>
+      <p class="hero-subtitle">
+        The AirDropFarm automatically distributes the token creator reward in real-time among the holders of another token,
+        directly to their wallets – without any manual work.
+      </p>
+      <div class="hero-actions">
+        <a href="#countdown" class="btn btn-primary btn-lg">Next Airdrop</a>
+        <a href="#stats" class="btn btn-outline btn-lg">Live Statistics</a>
+      </div>
+      <div class="hero-stats-mini">
+        <div><strong id="miniHolders">0</strong><span>Holder so far</span></div>
+        <div><strong id="miniSol">0</strong><span>SOL distributed</span></div>
+        <div><strong id="miniRounds">0</strong><span>Completed rounds</span></div>
+      </div>
+    </div>
+    <div class="scroll-indicator"><span></span></div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <h2 class="section-title">How It Works</h2>
+      <p class="section-subtitle">In three simple steps, a fully automated, on-chain process.</p>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-number">01</div>
+          <h3>Creator Reward Collection</h3>
+          <p>The pump.fun token creator reward is continuously accumulated in the project wallet after each trade.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">02</div>
+          <h3>Holder Snapshot</h3>
+          <p>The system takes a snapshot of the targeted token holders at regular intervals, proportional to the amount they hold.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">03</div>
+          <h3>Automatic Airdrop</h3>
+          <p>The accumulated SOL is automatically distributed in batch transactions directly to the holders' wallets.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COUNTDOWN -->
+  <section class="countdown-section" id="countdown">
+    <div class="container">
+      <h2 class="section-title">Next <span class="accent">Airdrop</span> Round</h2>
+      <p class="section-subtitle">The countdown timer shows the time until the next automatic SOL distribution.</p>
+      <div class="countdown-grid" id="countdownGrid">
+        <div class="countdown-box">
+          <span class="countdown-value" id="cdDays">00</span>
+          <span class="countdown-label">Days</span>
+        </div>
+        <div class="countdown-box">
+          <span class="countdown-value" id="cdHours">00</span>
+          <span class="countdown-label">Hours</span>
+        </div>
+        <div class="countdown-box">
+          <span class="countdown-value" id="cdMinutes">00</span>
+          <span class="countdown-label">Minutes</span>
+        </div>
+        <div class="countdown-box">
+          <span class="countdown-value" id="cdSeconds">00</span>
+          <span class="countdown-label">Seconds</span>
+        </div>
+      </div>
+      <p class="countdown-note" id="countdownNote">The countdown automatically restarts after each round.</p>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats-section" id="stats">
+    <div class="container">
+      <h2 class="section-title">Live <span class="accent">Statistics</span></h2>
+      <p class="section-subtitle">Real-time data on the distributed SOL amount and participating holders.</p>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon">👛</span>
+          <span class="stat-value" id="statHolders">0</span>
+          <span class="stat-label">Airdrop Participants</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">◎</span>
+          <span class="stat-value" id="statSol">0.00</span>
+          <span class="stat-label">Total Distributed SOL</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">🔁</span>
+          <span class="stat-value" id="statRounds">0</span>
+          <span class="stat-label">Closed Airdrop Rounds</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">⚡</span>
+          <span class="stat-value" id="statAvg">0.00</span>
+          <span class="stat-label">Average SOL / Holder</span>
+        </div>
+      </div>
+
+      <div class="chart-panel">
+        <h3>Recent Airdrop Distributions</h3>
+        <canvas id="distributionChart" height="120"></canvas>
+      </div>
+
+      <div class="table-panel">
+        <h3>Recent Airdrop Transactions</h3>
+        <div class="table-scroll">
+          <table id="recentTable">
+            <thead>
+              <tr><th>Time</th><th>Wallet</th><th>SOL Amount</th><th>Transaction</th></tr>
+            </thead>
+            <tbody id="recentTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq-section" id="faq">
+    <div class="container">
+      <h2 class="section-title">Frequently <span class="accent">Asked Questions</span></h2>
+      <div class="faq-list" id="faqList">
+        <div class="faq-item">
+          <button class="faq-question">
+            Where does airdrop SOL come from? <span>+</span>
+          </button>
+          <div class="faq-answer">
+            <p>From the pump.fun creator reward commission that the project token generates after every trade.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">
+            What token do I need to hold to participate? <span>+</span>
+          </button>
+          <div class="faq-answer">
+            <p>You need to be on the list of targeted token holders at the time of the snapshot, keeping the token in your wallet.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">
+            Do I need to do anything to claim the airdrop? <span>+</span>
+          </button>
+          <div class="faq-answer">
+            <p>No, the system automatically sends the SOL directly to your wallet via on-chain transactions.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">
+            Where can I verify the transactions? <span>+</span>
+          </button>
+          <div class="faq-answer">
+            <p>All distributions are available via Solana Explorer links in the statistics table.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="logo-icon">💧</span>
+        <span class="logo-text">AirDrop<span class="accent">Farm</span></span>
+        <p>Automated Solana airdrop system based on pump.fun creator reward.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#hero">Home</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#countdown">Countdown</a>
+        <a href="#stats">Statistics</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div class="footer-social">
+        <a href="#" aria-label="X / Twitter">𝕏</a>
+        <a href="#" aria-label="Telegram">TG</a>
+        <a href="#" aria-label="Discord">DC</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; <span id="year"></span> AirDropFarm. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/countdown.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
