@@ -52,3 +52,6 @@ src/generated/
 # Runtime artifacts
 *.pid
 *.seed
+
+#Docker
+docker-compose.yml

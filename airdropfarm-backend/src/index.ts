@@ -20,10 +20,13 @@ app.get("/health", async (_req, res) => {
 
 app.post("/snapshots", async (req, res) => {
   try {
-    const rewardLamports = BigInt(req.body.rewardLamports);
+    
+    const grossRewardPayoutRaw = BigInt(req.body.grossRewardPayoutRaw);
     const sourceRewardTx = req.body.sourceRewardTx as string | undefined;
-
-    const snapshot = await createSnapshot(rewardLamports, sourceRewardTx);
+    const snapshot = await createSnapshot(
+      grossRewardPayoutRaw,
+      sourceRewardTx
+    );
 
     res.json({
       snapshotId: snapshot.id,
@@ -83,7 +86,7 @@ app.post("/admin/rewards", requireAdmin, async (req, res) => {
   try {
     const reward = await registerRewardEvent({
       source: req.body.source ?? "manual",
-      grossLamports: BigInt(req.body.grossLamports),
+      grossPayoutRaw: BigInt(req.body.grossPayoutRaw),
       sourceTx: req.body.sourceTx,
       notes: req.body.notes
     });

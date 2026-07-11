@@ -2,10 +2,18 @@ import { prisma } from "../lib/prisma.js";
 import { sendSolBatch } from "../lib/solana.js";
 import { config } from "../lib/config.js";
 
+import { prisma } from "../lib/prisma.js";
+import { config } from "../lib/config.js";
+import { sendUsdcBatch } from "../lib/solana.js";
+
 function chunk<T>(items: T[], size: number) {
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
-  return out;
+  const groups: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    groups.push(items.slice(index, index + size));
+  }
+
+  return groups;
 }
 
 export async function distributeSnapshot(snapshotId: string) {
@@ -18,53 +26,120 @@ export async function distributeSnapshot(snapshotId: string) {
     throw new Error("Snapshot not found");
   }
 
-  const groups = chunk(snapshot.holders, config.maxInstructionsPerTx);
-  const results = [];
+  if (snapshot.payoutMint !== config.payoutMint) {
+    throw new Error(
+      `Snapshot payout mint (${snapshot.payoutMint}) does not match PAYOUT_MINT.`
+    );
+  }
+
+  const groups = chunk(
+    snapshot.holders,
+    config.maxRecipientsPerTx
+  );
+
+  const results: Array<{
+    type: "holders" | "buyback";
+    signature?: string;
+    error?: string;
+    count: number;
+  }> = [];
 
   for (const group of groups) {
     try {
-      const tx = await sendSolBatch(
-        group.map((h) => ({
-          owner: h.owner,
-          lamports: h.finalLamports
+      const transaction = await sendUsdcBatch(
+        group.map((holder) => ({
+          owner: holder.owner,
+          amountRaw: holder.finalPayoutRaw
         }))
       );
 
-      for (const h of group) {
-        await prisma.distribution.create({
-          data: {
-            snapshotId: snapshot.id,
-            owner: h.owner,
-            lamportsSent: h.finalLamports,
-            txSignature: tx.signature,
-            status: "sent"
-          }
-        });
-      }
+      await prisma.distribution.createMany({
+        data: group.map((holder) => ({
+          snapshotId: snapshot.id,
+          owner: holder.owner,
+          recipientType: "holder",
+          payoutRawSent: holder.finalPayoutRaw,
+          txSignature: transaction.signature,
+          status: "sent"
+        }))
+      });
 
       results.push({
-        txSignature: tx.signature,
+        type: "holders",
+        signature: transaction.signature,
         count: group.length
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unknown distribution error";
+        error instanceof Error
+          ? error.message
+          : "Unknown holder-distribution error";
 
-      for (const h of group) {
-        await prisma.distribution.create({
-          data: {
-            snapshotId: snapshot.id,
-            owner: h.owner,
-            lamportsSent: h.finalLamports,
-            status: "failed",
-            errorMessage: message
-          }
-        });
-      }
+      await prisma.distribution.createMany({
+        data: group.map((holder) => ({
+          snapshotId: snapshot.id,
+          owner: holder.owner,
+          recipientType: "holder",
+          payoutRawSent: holder.finalPayoutRaw,
+          status: "failed",
+          errorMessage: message
+        }))
+      });
 
       results.push({
+        type: "holders",
         error: message,
         count: group.length
+      });
+    }
+  }
+
+  if (snapshot.buybackPayoutRaw > 0n) {
+    try {
+      const transaction = await sendUsdcBatch([
+        {
+          owner: config.buybackWalletAddress,
+          amountRaw: snapshot.buybackPayoutRaw
+        }
+      ]);
+
+      await prisma.distribution.create({
+        data: {
+          snapshotId: snapshot.id,
+          owner: config.buybackWalletAddress,
+          recipientType: "buyback",
+          payoutRawSent: snapshot.buybackPayoutRaw,
+          txSignature: transaction.signature,
+          status: "sent"
+        }
+      });
+
+      results.push({
+        type: "buyback",
+        signature: transaction.signature,
+        count: 1
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unknown buyback-distribution error";
+
+      await prisma.distribution.create({
+        data: {
+          snapshotId: snapshot.id,
+          owner: config.buybackWalletAddress,
+          recipientType: "buyback",
+          payoutRawSent: snapshot.buybackPayoutRaw,
+          status: "failed",
+          errorMessage: message
+        }
+      });
+
+      results.push({
+        type: "buyback",
+        error: message,
+        count: 1
       });
     }
   }

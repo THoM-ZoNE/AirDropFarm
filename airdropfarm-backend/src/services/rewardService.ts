@@ -5,19 +5,22 @@ import { distributeSnapshot } from "./distributionService.js";
 
 export async function registerRewardEvent(input: {
   source: string;
-  grossLamports: bigint;
+  grossPayoutRaw: bigint;
   sourceTx?: string;
   notes?: string;
 }) {
-  if (input.grossLamports < config.minRewardLamports) {
-    throw new Error("Reward too small.");
+  if (input.grossPayoutRaw < config.minRewardPayoutRaw) {
+    throw new Error(
+      `Reward is below MIN_REWARD_PAYOUT_RAW for ${config.payoutSymbol}.`
+    );
   }
 
   return prisma.rewardEvent.create({
     data: {
       source: input.source,
       sourceTx: input.sourceTx,
-      grossLamports: input.grossLamports,
+      grossPayoutRaw: input.grossPayoutRaw,
+      payoutMint: config.payoutMint,
       status: "pending",
       notes: input.notes
     }
@@ -31,15 +34,29 @@ export async function processPendingRewardEvent() {
   });
 
   if (!reward) {
-    return { ok: true, message: "No pending reward event." };
+    return {
+      ok: true,
+      message: "No pending reward event."
+    };
   }
 
-  const snapshot = await createSnapshot(reward.grossLamports, reward.sourceTx ?? undefined);
+  if (reward.payoutMint !== config.payoutMint) {
+    throw new Error(
+      `Reward payout mint (${reward.payoutMint}) does not match PAYOUT_MINT.`
+    );
+  }
+
+  const snapshot = await createSnapshot(
+    reward.grossPayoutRaw,
+    reward.sourceTx ?? undefined
+  );
 
   await prisma.rewardEvent.update({
     where: { id: reward.id },
     data: {
-      status: config.autoDistribute ? "snapshot_created" : "awaiting_distribution",
+      status: config.autoDistribute
+        ? "snapshot_created"
+        : "awaiting_distribution",
       snapshotId: snapshot.id
     }
   });
