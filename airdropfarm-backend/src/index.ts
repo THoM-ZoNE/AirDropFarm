@@ -20,9 +20,9 @@ app.get("/health", async (_req, res) => {
 
 app.post("/snapshots", async (req, res) => {
   try {
-    
     const grossRewardPayoutRaw = BigInt(req.body.grossRewardPayoutRaw);
     const sourceRewardTx = req.body.sourceRewardTx as string | undefined;
+
     const snapshot = await createSnapshot(
       grossRewardPayoutRaw,
       sourceRewardTx
@@ -30,11 +30,11 @@ app.post("/snapshots", async (req, res) => {
 
     res.json({
       snapshotId: snapshot.id,
-  holders: snapshot.holders.length,
-  buybackPayoutRaw: snapshot.buybackPayoutRaw.toString(),
-  tokenAPoolPayoutRaw: snapshot.tokenAPoolPayoutRaw.toString(),
-  tokenBPoolPayoutRaw: snapshot.tokenBPoolPayoutRaw.toString(),
-  reservedSafetyPayoutRaw: snapshot.reservedSafetyPayoutRaw.toString()
+      holders: snapshot.holders.length,
+      buybackPayoutRaw: snapshot.buybackPayoutRaw.toString(),
+      tokenAPoolPayoutRaw: snapshot.tokenAPoolPayoutRaw.toString(),
+      tokenBPoolPayoutRaw: snapshot.tokenBPoolPayoutRaw.toString(),
+      reservedSafetyPayoutRaw: snapshot.reservedSafetyPayoutRaw.toString()
     });
   } catch (error) {
     res.status(400).json({
@@ -60,24 +60,22 @@ app.get("/stats", async (_req, res) => {
   });
 
   const ownerSet = new Set<string>();
-  let totalLamports = 0n;
+  let totalPayoutRaw = 0n;
 
-  for (const row of sent as Array<{ owner: string; payoutRawSent: bigint | string | number }>) {
-  ownerSet.add(row.owner);
-  totalLamports += BigInt(row.payoutRawSent);
-}
+  for (const row of sent) {
+    ownerSet.add(row.owner);
+    totalPayoutRaw += row.payoutRawSent;
+  }
 
   const holders = ownerSet.size;
   const rounds = await prisma.snapshot.count();
 
   res.json({
     totalHolders: holders,
-    totalSolDistributed: Number(totalLamports) / 1_000_000_000,
+    totalPayoutDistributedRaw: totalPayoutRaw.toString(),
     totalRounds: rounds,
-    avgSolPerHolder:
-      holders === 0
-        ? 0
-        : Number(totalLamports) / 1_000_000_000 / holders
+    avgPayoutRawPerHolder:
+      holders === 0 ? "0" : (totalPayoutRaw / BigInt(holders)).toString()
   });
 });
 
@@ -93,8 +91,16 @@ app.post("/admin/rewards", requireAdmin, async (req, res) => {
     res.json({
       ok: true,
       reward: {
-        ...reward,
-        grossPayoutRaw: reward.grossPayoutRaw.toString()
+        id: reward.id,
+        createdAt: reward.createdAt,
+        source: reward.source,
+        sourceTx: reward.sourceTx,
+        grossPayoutRaw: reward.grossPayoutRaw.toString(),
+        payoutMint: reward.payoutMint,
+        status: reward.status,
+        snapshotId: reward.snapshotId,
+        distributedAt: reward.distributedAt,
+        notes: reward.notes
       }
     });
   } catch (error) {
