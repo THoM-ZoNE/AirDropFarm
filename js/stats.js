@@ -43,8 +43,8 @@
     );
 
     animateCounter(
-      document.getElementById("statSol"),
-      stats.totalSolDistributed ?? 0,
+      document.getElementById("statUSDC"),
+      stats.totalUsdcDistributed ?? 0,
       2
     );
 
@@ -56,7 +56,7 @@
 
     animateCounter(
       document.getElementById("statAvg"),
-      stats.avgSolPerHolder ?? 0,
+      stats.avgUsdcPerHolder ?? 0,
       4
     );
 
@@ -67,8 +67,8 @@
     );
 
     animateCounter(
-      document.getElementById("miniSol"),
-      stats.totalSolDistributed ?? 0,
+      document.getElementById("miniUSDC"),
+      stats.totalUsdcDistributed ?? 0,
       2
     );
 
@@ -99,7 +99,7 @@
       tr.innerHTML = `
         <td>${tx.time ?? "-"}</td>
         <td>${tx.wallet ?? "-"}</td>
-        <td class="sol-amount">${Number(tx.amount ?? 0).toFixed(4)} SOL</td>
+        <td class="usdc-amount">${Number(tx.amount ?? 0).toFixed(4)} USDC</td>
         <td>
           ${
             tx.tx
@@ -114,7 +114,7 @@
 
   async function loadStats() {
     if (!window.AIRDROP_CONFIG || !AIRDROP_CONFIG.statsApiUrl) {
-      console.warn("Stats API URL nincs beállítva.");
+      console.warn("Stats API URL not configured.");
       return;
     }
 

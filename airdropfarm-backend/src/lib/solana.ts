@@ -55,36 +55,25 @@ async function getMintProgramId(mint: PublicKey) {
   return accountInfo.owner;
 }
 
-export async function getAllTokenHoldersByMint(
-  mintAddress: string
-): Promise<HolderRecord[]> {
+export async function getAllTokenHoldersByMint(mintAddress: string): Promise<HolderRecord[]> {
   const mint = new PublicKey(mintAddress);
-
-  const response = await connection.getProgramAccounts(TOKEN_PROGRAM_ID, {
-    filters: [
-      { dataSize: 165 },
-      {
-        memcmp: {
-          offset: 0,
-          bytes: mint.toBase58()
-        }
-      }
-    ]
-  });
-
   const holders: HolderRecord[] = [];
 
-  for (const account of response) {
-    const data = account.account.data;
-    const owner = new PublicKey(data.subarray(32, 64)).toBase58();
-    const rawAmount = data.readBigUInt64LE(64);
+  for (const programId of [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID]) {
+    const response = await connection.getProgramAccounts(programId, {
+      filters: [
+        { dataSize: 165 },
+        { memcmp: { offset: 0, bytes: mint.toBase58() } }
+      ]
+    });
 
-    if (rawAmount > 0n) {
-      holders.push({
-        owner,
-        mint: mintAddress,
-        rawAmount
-      });
+    for (const account of response) {
+      const data = account.account.data;
+      const owner = new PublicKey(data.subarray(32, 64)).toBase58();
+      const rawAmount = data.readBigUInt64LE(64);
+      if (rawAmount > 0n) {
+        holders.push({ owner, mint: mintAddress, rawAmount });
+      }
     }
   }
 
