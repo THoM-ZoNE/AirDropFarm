@@ -30,12 +30,11 @@ app.post("/snapshots", async (req, res) => {
 
     res.json({
       snapshotId: snapshot.id,
-      holders: snapshot.holders.length,
-      buybackLamports: snapshot.buybackLamports.toString(),
-      tokenAPoolLamports: snapshot.tokenAPoolLamports.toString(),
-      tokenBPoolLamports: snapshot.tokenBPoolLamports.toString(),
-      reservedFeeLamports: snapshot.reservedFeeLamports.toString(),
-      reservedSafetyLamports: snapshot.reservedSafetyLamports.toString()
+  holders: snapshot.holders.length,
+  buybackPayoutRaw: snapshot.buybackPayoutRaw.toString(),
+  tokenAPoolPayoutRaw: snapshot.tokenAPoolPayoutRaw.toString(),
+  tokenBPoolPayoutRaw: snapshot.tokenBPoolPayoutRaw.toString(),
+  reservedSafetyPayoutRaw: snapshot.reservedSafetyPayoutRaw.toString()
     });
   } catch (error) {
     res.status(400).json({
@@ -63,10 +62,10 @@ app.get("/stats", async (_req, res) => {
   const ownerSet = new Set<string>();
   let totalLamports = 0n;
 
-  for (const row of sent as Array<{ owner: string; lamportsSent: bigint | string | number }>) {
-    ownerSet.add(row.owner);
-    totalLamports += BigInt(row.lamportsSent);
-  }
+  for (const row of sent as Array<{ owner: string; payoutRawSent: bigint | string | number }>) {
+  ownerSet.add(row.owner);
+  totalLamports += BigInt(row.payoutRawSent);
+}
 
   const holders = ownerSet.size;
   const rounds = await prisma.snapshot.count();
@@ -95,7 +94,7 @@ app.post("/admin/rewards", requireAdmin, async (req, res) => {
       ok: true,
       reward: {
         ...reward,
-        grossLamports: reward.grossLamports.toString()
+        grossPayoutRaw: reward.grossPayoutRaw.toString()
       }
     });
   } catch (error) {

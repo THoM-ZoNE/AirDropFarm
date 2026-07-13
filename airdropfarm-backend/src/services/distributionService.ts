@@ -1,8 +1,4 @@
 import { prisma } from "../lib/prisma.js";
-import { sendSolBatch } from "../lib/solana.js";
-import { config } from "../lib/config.js";
-
-import { prisma } from "../lib/prisma.js";
 import { config } from "../lib/config.js";
 import { sendUsdcBatch } from "../lib/solana.js";
 
