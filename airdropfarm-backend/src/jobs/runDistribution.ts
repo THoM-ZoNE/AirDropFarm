@@ -1,4 +1,5 @@
 import { distributeSnapshot } from "../services/distributionService.js";
+import { processPendingRewardEvent } from "../services/rewardService.js";
 
 const snapshotId = process.argv[2];
 
@@ -7,4 +8,13 @@ if (!snapshotId) {
 }
 
 const result = await distributeSnapshot(snapshotId);
-console.log(JSON.stringify(result, null, 2));
+console.log("[runDistribution] started");
+
+try {
+  const result = await processPendingRewardEvent();
+  console.log("[runDistribution] result", result);
+  console.log("[runDistribution] finished");
+} catch (error) {
+  console.error("[runDistribution] failed", error);
+  process.exit(1);
+}

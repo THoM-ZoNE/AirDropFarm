@@ -1,20 +1,28 @@
 import { createSnapshot } from "../services/snapshotService.js";
 
-const rewardLamports = BigInt(process.argv[2] || "1000000000");
+const rewardRaw = BigInt(process.argv[2] || "1000000");
 const rewardTx = process.argv[3];
 
-const snapshot = await createSnapshot(rewardLamports, rewardTx);
+console.log("[runSnapshot] started");
+console.log("[runSnapshot] input", {
+  rewardRaw: rewardRaw.toString(),
+  rewardTx: rewardTx ?? null
+});
 
-console.log(
-  JSON.stringify(
-    {
-      snapshotId: snapshot.id,
-      holders: snapshot.holders.length,
-      buybackPayoutRaw: snapshot.buybackPayoutRaw.toString(),
-      tokenAPoolPayoutRaw: snapshot.tokenAPoolPayoutRaw.toString(),
-      tokenBPoolPayoutRaw: snapshot.tokenBPoolPayoutRaw.toString()
-    },
-    null,
-    2
-  )
-);
+try {
+  const snapshot = await createSnapshot(rewardRaw, rewardTx);
+
+  console.log("[runSnapshot] snapshot created", {
+    snapshotId: snapshot.id,
+    holders: snapshot.holders.length,
+    buybackPayoutRaw: snapshot.buybackPayoutRaw.toString(),
+    tokenAPoolPayoutRaw: snapshot.tokenAPoolPayoutRaw.toString(),
+    tokenBPoolPayoutRaw: snapshot.tokenBPoolPayoutRaw.toString(),
+    reservedSafetyPayoutRaw: snapshot.reservedSafetyPayoutRaw.toString()
+  });
+
+  console.log("[runSnapshot] finished");
+} catch (error) {
+  console.error("[runSnapshot] failed", error);
+  process.exit(1);
+}

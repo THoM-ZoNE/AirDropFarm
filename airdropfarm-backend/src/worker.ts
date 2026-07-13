@@ -33,3 +33,7 @@ if (config.cronEnabled) {
 } else {
   console.log("Cron disabled.");
 }
+console.log("Cron worker started.");
+console.log("cronEnabled:", config.cronEnabled);
+console.log("cronSnapshot:", config.cronSnapshot);
+console.log("cronDistribute:", config.cronDistribute);
