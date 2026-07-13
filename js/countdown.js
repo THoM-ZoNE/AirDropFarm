@@ -20,7 +20,7 @@
 
     if (diff <= 0) {
       // Round closed -> new round
-      target = now + AIRDROP_CONFIG.roundLengthHours * 60 * 60 * 1000;
+      target = now + AIRDROP_CONFIG.roundLengthMinutes * 60 * 1000;
       if (els.note) els.note.textContent = "New airdrop round started!";
       diff = target - now;
     }
