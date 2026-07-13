@@ -10,9 +10,9 @@ console.log(
     {
       snapshotId: snapshot.id,
       holders: snapshot.holders.length,
-      buybackLamports: snapshot.buybackLamports.toString(),
-      tokenAPoolLamports: snapshot.tokenAPoolLamports.toString(),
-      tokenBPoolLamports: snapshot.tokenBPoolLamports.toString()
+      buybackPayoutRaw: snapshot.buybackPayoutRaw.toString(),
+      tokenAPoolPayoutRaw: snapshot.tokenAPoolPayoutRaw.toString(),
+      tokenBPoolPayoutRaw: snapshot.tokenBPoolPayoutRaw.toString()
     },
     null,
     2

@@ -35,6 +35,10 @@ const schema = z.object({
   DRY_RUN: z.string().optional().default("true"),
   AUTO_DISTRIBUTE: z.string().optional().default("false"),
 
+  CRON_ENABLED: z.string().optional().default("false"),
+  CRON_SNAPSHOT: z.string().default("0 * * * *"),
+  CRON_DISTRIBUTE: z.string().default("10 * * * *"),
+
   PORT: z.coerce.number().int().default(8787),
   ADMIN_API_KEY: z.string().min(6)
 });
@@ -93,6 +97,10 @@ export const config = {
 
   dryRun: env.DRY_RUN === "true",
   autoDistribute: env.AUTO_DISTRIBUTE === "true",
+
+  cronEnabled: env.CRON_ENABLED === "true",
+  cronSnapshot: env.CRON_SNAPSHOT,
+  cronDistribute: env.CRON_DISTRIBUTE,
 
   port: env.PORT,
   adminApiKey: env.ADMIN_API_KEY
