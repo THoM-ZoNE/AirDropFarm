@@ -33,7 +33,31 @@ if (config.cronEnabled) {
 } else {
   console.log("Cron disabled.");
 }
-console.log("Cron worker started.");
 console.log("cronEnabled:", config.cronEnabled);
 console.log("cronSnapshot:", config.cronSnapshot);
 console.log("cronDistribute:", config.cronDistribute);
+
+if (config.cronEnabled) {
+  cron.schedule(config.cronSnapshot, async () => {
+    console.log("Snapshot cron tick.");
+    try {
+      console.log("Starting snapshot job...");
+      // ide a snapshot hívás
+      console.log("Snapshot job finished.");
+    } catch (error) {
+      console.error("Snapshot job failed:", error);
+    }
+  });
+
+  cron.schedule(config.cronDistribute, async () => {
+    console.log("Distribution cron tick.");
+    try {
+      console.log("Starting distribution job...");
+      const result = await processPendingRewardEvent();
+      console.log("Distribution result:", result);
+      console.log("Distribution job finished.");
+    } catch (error) {
+      console.error("Distribution job failed:", error);
+    }
+  });
+}

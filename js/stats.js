@@ -88,7 +88,7 @@
     if (!Array.isArray(txList) || txList.length === 0) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td colspan="4">Még nincs megjeleníthető tranzakció.</td>
+        <td colspan="4">There are no transactions to display.</td>
       `;
       tbody.appendChild(tr);
       return;
