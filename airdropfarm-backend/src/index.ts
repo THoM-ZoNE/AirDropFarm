@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import { prisma } from "./lib/prisma.js";
 import { config } from "./lib/config.js";
 import { requireAdmin } from "./lib/adminAuth.js";
@@ -8,14 +9,12 @@ import {
   registerRewardEvent,
   processPendingRewardEvent
 } from "./services/rewardService.js";
-import cors from "cors";
 
 const app = express();
 
-app.use(express.json());
-
+// Middleware — only once, in the correct order
 app.use(cors({
-  origin: "*" // devneten elfogadható; élesben szűkítsd le saját domainre
+  origin: "*" // on the devnet is allowed; in production, restrict to your domain
 }));
 app.use(express.json());
 
@@ -76,10 +75,19 @@ app.get("/stats", async (_req, res) => {
   const holders = ownerSet.size;
   const rounds = await prisma.snapshot.count();
 
+  // PAYOUT_TOKEN_DECIMALS convert (default 6 = USDC)
+  const decimals = 6;
+  const totalUsdc = Number(totalPayoutRaw) / 10 ** decimals;
+  const avgUsdc = holders === 0 ? 0 : totalUsdc / holders;
+
   res.json({
     totalHolders: holders,
-    totalPayoutDistributedRaw: totalPayoutRaw.toString(),
     totalRounds: rounds,
+    // frontend-compatible fields (stats.js waiting for these names)
+    totalUsdcDistributed: totalUsdc,
+    avgUsdcPerHolder: avgUsdc,
+    // raw values are also available, if needed
+    totalPayoutDistributedRaw: totalPayoutRaw.toString(),
     avgPayoutRawPerHolder:
       holders === 0 ? "0" : (totalPayoutRaw / BigInt(holders)).toString()
   });
