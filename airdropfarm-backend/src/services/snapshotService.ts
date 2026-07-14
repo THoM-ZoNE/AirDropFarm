@@ -93,27 +93,44 @@ function buildMergedDistribution(
     config.safetyBufferBps
   );
 
-  const distributableGross =
+  const distributableAfterSafetyRaw =
     grossRewardPayoutRaw - reservedSafetyPayoutRaw;
 
-  if (distributableGross <= 0n) {
+  if (distributableAfterSafetyRaw <= 0n) {
     throw new Error("Reward is too small after the safety reserve.");
   }
 
   const buybackPayoutRaw = divBps(
-    distributableGross,
+    distributableAfterSafetyRaw,
     config.buybackBps
   );
 
+  const distributableToHoldersRaw =
+    distributableAfterSafetyRaw - buybackPayoutRaw;
+
+  if (distributableToHoldersRaw <= 0n) {
+    throw new Error("Reward is too small after buyback and safety reserve.");
+  }
+
+  const bonusPoolPayoutRaw = divBps(
+    distributableToHoldersRaw,
+    config.dualHolderBonusBps
+  );
+
+  const baseHolderPoolRaw =
+    distributableToHoldersRaw - bonusPoolPayoutRaw;
+
+  if (baseHolderPoolRaw <= 0n) {
+    throw new Error("Reward is too small after holder bonus reserve.");
+  }
+
   const tokenBPoolPayoutRaw = divBps(
-    distributableGross,
+    baseHolderPoolRaw,
     config.tokenBPoolBps
   );
 
   const tokenAPoolPayoutRaw =
-    distributableGross -
-    buybackPayoutRaw -
-    tokenBPoolPayoutRaw;
+    baseHolderPoolRaw - tokenBPoolPayoutRaw;
 
   const totalA = all.reduce(
     (sum, item) => sum + item.tokenARaw,
@@ -122,6 +139,15 @@ function buildMergedDistribution(
 
   const totalB = all.reduce(
     (sum, item) => sum + item.tokenBRaw,
+    0n
+  );
+
+  const dualEligible = all.filter(
+    (row) => row.inTokenA && row.inTokenB
+  );
+
+  const totalDualWeight = dualEligible.reduce(
+    (sum, row) => sum + row.tokenARaw + row.tokenBRaw,
     0n
   );
 
@@ -143,9 +169,13 @@ function buildMergedDistribution(
       const basePayoutRaw = baseFromA + baseFromB;
       const bonusApplied = row.inTokenA && row.inTokenB;
 
-      const bonusPayoutRaw = bonusApplied
-        ? divBps(basePayoutRaw, config.dualHolderBonusBps)
-        : 0n;
+      let bonusPayoutRaw = 0n;
+
+      if (bonusApplied && totalDualWeight > 0n) {
+        const holderDualWeight = row.tokenARaw + row.tokenBRaw;
+        bonusPayoutRaw =
+          (bonusPoolPayoutRaw * holderDualWeight) / totalDualWeight;
+      }
 
       const finalPayoutRaw =
         basePayoutRaw + bonusPayoutRaw;
@@ -184,6 +214,7 @@ function buildMergedDistribution(
   return {
     reservedSafetyPayoutRaw,
     buybackPayoutRaw,
+    bonusPoolPayoutRaw,
     tokenAPoolPayoutRaw,
     tokenBPoolPayoutRaw,
     holders: merged
@@ -226,8 +257,8 @@ export async function createSnapshot(
           owner: holder.owner,
           inTokenA: holder.inTokenA,
           inTokenB: holder.inTokenB,
-          tokenARaw: holder.tokenARaw.toString(),
-          tokenBRaw: holder.tokenBRaw.toString(),
+          tokenARaw: holder.tokenARaw,
+          tokenBRaw: holder.tokenBRaw,
           basePayoutRaw: holder.basePayoutRaw,
           bonusPayoutRaw: holder.bonusPayoutRaw,
           finalPayoutRaw: holder.finalPayoutRaw,

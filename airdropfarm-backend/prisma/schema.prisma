@@ -35,8 +35,8 @@ model SnapshotHolder {
   inTokenA           Boolean
   inTokenB           Boolean
 
-  tokenARaw          String
-  tokenBRaw          String
+  tokenARaw          BigInt
+  tokenBRaw          BigInt
 
   basePayoutRaw      BigInt
   bonusPayoutRaw     BigInt
