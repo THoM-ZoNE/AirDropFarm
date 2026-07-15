@@ -105,80 +105,54 @@ function buildMergedDistribution(
     config.buybackBps
   );
 
-  const distributableToHoldersRaw =
+  const holderPoolPayoutRaw =
     distributableAfterSafetyRaw - buybackPayoutRaw;
 
-  if (distributableToHoldersRaw <= 0n) {
-    throw new Error("Reward is too small after buyback and safety reserve.");
+  if (holderPoolPayoutRaw <= 0n) {
+    throw new Error("Reward is too small after safety reserve and buyback.");
   }
 
-  const bonusPoolPayoutRaw = divBps(
-    distributableToHoldersRaw,
-    config.dualHolderBonusBps
+  const DUAL_MULTIPLIER_NUM = 2n;
+  const DUAL_MULTIPLIER_DEN = 1n;
+
+  const scored = all.map((row) => {
+    const rawScore = row.tokenARaw + row.tokenBRaw;
+    const bonusApplied = row.inTokenA && row.inTokenB;
+
+    const weightedScore = bonusApplied
+      ? (rawScore * DUAL_MULTIPLIER_NUM) / DUAL_MULTIPLIER_DEN
+      : rawScore;
+
+    const bonusPayoutRaw = 0n;
+
+    return {
+      owner: row.owner,
+      inTokenA: row.inTokenA,
+      inTokenB: row.inTokenB,
+      tokenARaw: row.tokenARaw,
+      tokenBRaw: row.tokenBRaw,
+      rawScore,
+      weightedScore,
+      bonusApplied,
+      bonusPayoutRaw
+    };
+  });
+
+  const totalWeightedScore = scored.reduce(
+    (sum, row) => sum + row.weightedScore,
+    0n
   );
 
-  const baseHolderPoolRaw =
-    distributableToHoldersRaw - bonusPoolPayoutRaw;
-
-  if (baseHolderPoolRaw <= 0n) {
-    throw new Error("Reward is too small after holder bonus reserve.");
+  if (totalWeightedScore <= 0n) {
+    throw new Error("Total weighted score is zero.");
   }
 
-  const tokenBPoolPayoutRaw = divBps(
-    baseHolderPoolRaw,
-    config.tokenBPoolBps
-  );
-
-  const tokenAPoolPayoutRaw =
-    baseHolderPoolRaw - tokenBPoolPayoutRaw;
-
-  const totalA = all.reduce(
-    (sum, item) => sum + item.tokenARaw,
-    0n
-  );
-
-  const totalB = all.reduce(
-    (sum, item) => sum + item.tokenBRaw,
-    0n
-  );
-
-  const dualEligible = all.filter(
-    (row) => row.inTokenA && row.inTokenB
-  );
-
-  const totalDualWeight = dualEligible.reduce(
-    (sum, row) => sum + row.tokenARaw + row.tokenBRaw,
-    0n
-  );
-
-  const merged: MergedDistribution[] = all
+  const merged: MergedDistribution[] = scored
     .map((row) => {
-      let baseFromA = 0n;
-      let baseFromB = 0n;
-
-      if (row.inTokenA && totalA > 0n) {
-        baseFromA =
-          (tokenAPoolPayoutRaw * row.tokenARaw) / totalA;
-      }
-
-      if (row.inTokenB && totalB > 0n) {
-        baseFromB =
-          (tokenBPoolPayoutRaw * row.tokenBRaw) / totalB;
-      }
-
-      const basePayoutRaw = baseFromA + baseFromB;
-      const bonusApplied = row.inTokenA && row.inTokenB;
-
-      let bonusPayoutRaw = 0n;
-
-      if (bonusApplied && totalDualWeight > 0n) {
-        const holderDualWeight = row.tokenARaw + row.tokenBRaw;
-        bonusPayoutRaw =
-          (bonusPoolPayoutRaw * holderDualWeight) / totalDualWeight;
-      }
-
       const finalPayoutRaw =
-        basePayoutRaw + bonusPayoutRaw;
+        (holderPoolPayoutRaw * row.weightedScore) / totalWeightedScore;
+
+      const basePayoutRaw = finalPayoutRaw;
 
       return {
         owner: row.owner,
@@ -187,9 +161,9 @@ function buildMergedDistribution(
         tokenARaw: row.tokenARaw,
         tokenBRaw: row.tokenBRaw,
         basePayoutRaw,
-        bonusPayoutRaw,
+        bonusPayoutRaw: row.bonusPayoutRaw,
         finalPayoutRaw,
-        bonusApplied
+        bonusApplied: row.bonusApplied
       };
     })
     .filter((row) => row.finalPayoutRaw > 0n);
@@ -206,7 +180,7 @@ function buildMergedDistribution(
 
   if (totalRequired > grossRewardPayoutRaw) {
     throw new Error(
-      `Reward cannot cover holder bonuses and reserves. ` +
+      `Reward cannot cover holder payouts and reserves. ` +
         `Missing ${(totalRequired - grossRewardPayoutRaw).toString()} raw units.`
     );
   }
@@ -214,9 +188,8 @@ function buildMergedDistribution(
   return {
     reservedSafetyPayoutRaw,
     buybackPayoutRaw,
-    bonusPoolPayoutRaw,
-    tokenAPoolPayoutRaw,
-    tokenBPoolPayoutRaw,
+    tokenAPoolPayoutRaw: 0n,
+    tokenBPoolPayoutRaw: holderPoolPayoutRaw,
     holders: merged
   };
 }

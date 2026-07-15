@@ -34,18 +34,6 @@ if (config.cronEnabled) {
     });
   });
 
-  // Distribution cron: ugyanaz a processPendingRewardEvent kezeli
-  // az autoDistribute flaget, tehát nem kell külön distribution trigger
-  cron.schedule(config.cronDistribute, async () => {
-    console.log("[distribution-job] Distribution cron tick.", new Date().toISOString());
-    await runLockedJob("distribution-job", async () => {
-      console.log("[distribution-job] Starting...");
-      const result = await processPendingRewardEvent();
-      console.log("[distribution-job] Result:", result);
-      console.log("[distribution-job] Finished.");
-    });
-  });
-
   console.log("Cron worker started.");
 } else {
   console.log("Cron disabled.");
