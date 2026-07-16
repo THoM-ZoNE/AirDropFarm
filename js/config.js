@@ -4,8 +4,8 @@ const AIRDROP_CONFIG = {
   roundLengthMinutes: 5,
 
   // API endpoints (if we have a backend)
-  statsApiUrl: "http://localhost:8787/stats",
-  recentTxApiUrl: null,
+  statsApiUrl: "https://airdrop.thomzone.net/api/stats",
+  recentTxApiUrl: "https://airdrop.thomzone.net/api/transactions",
 
   // Demo statistics
   demoStats: null,

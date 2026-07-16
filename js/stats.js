@@ -36,47 +36,16 @@
   function renderStats(stats) {
     if (!stats) return;
 
-    animateCounter(
-      document.getElementById("statHolders"),
-      stats.totalHolders ?? 0,
-      0
-    );
+    // Főbb stat számlálók
+    animateCounter(document.getElementById("statHolders"), stats.totalHolders ?? 0, 0);
+    animateCounter(document.getElementById("statUSDS"),   stats.totalUsdcDistributed ?? 0, 2);
+    animateCounter(document.getElementById("statRounds"), stats.totalRounds ?? 0, 0);
+    animateCounter(document.getElementById("statAvg"),    stats.avgUsdcPerHolder ?? 0, 4);
 
-    animateCounter(
-      document.getElementById("statUSDC"),
-      stats.totalUsdcDistributed ?? 0,
-      2
-    );
-
-    animateCounter(
-      document.getElementById("statRounds"),
-      stats.totalRounds ?? 0,
-      0
-    );
-
-    animateCounter(
-      document.getElementById("statAvg"),
-      stats.avgUsdcPerHolder ?? 0,
-      4
-    );
-
-    animateCounter(
-      document.getElementById("miniHolders"),
-      stats.totalHolders ?? 0,
-      0
-    );
-
-    animateCounter(
-      document.getElementById("miniUSDC"),
-      stats.totalUsdcDistributed ?? 0,
-      2
-    );
-
-    animateCounter(
-      document.getElementById("miniRounds"),
-      stats.totalRounds ?? 0,
-      0
-    );
+    // Mini stat számok (hero szekcióban)
+    animateCounter(document.getElementById("miniHolders"), stats.totalHolders ?? 0, 0);
+    animateCounter(document.getElementById("miniUSDC"),    stats.totalUsdcDistributed ?? 0, 2);
+    animateCounter(document.getElementById("miniRounds"),  stats.totalRounds ?? 0, 0);
   }
 
   function renderRecentTx(txList) {
@@ -87,9 +56,7 @@
 
     if (!Array.isArray(txList) || txList.length === 0) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td colspan="4">There are no transactions to display.</td>
-      `;
+      tr.innerHTML = `<td colspan="4">There are no transactions to display.</td>`;
       tbody.appendChild(tr);
       return;
     }
@@ -99,14 +66,8 @@
       tr.innerHTML = `
         <td>${tx.time ?? "-"}</td>
         <td>${tx.wallet ?? "-"}</td>
-        <td class="usdc-amount">${Number(tx.amount ?? 0).toFixed(4)} USDC</td>
-        <td>
-          ${
-            tx.tx
-              ? `<a href="https://solscan.io/tx/${tx.tx}" target="_blank" rel="noopener">View</a>`
-              : "-"
-          }
-        </td>
+        <td>${Number(tx.amount ?? 0).toFixed(4)} USDC</td>
+        <td>${tx.tx ? `<a href="https://solscan.io/tx/${tx.tx}" target="_blank" rel="noopener">View</a>` : "-"}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -128,9 +89,10 @@
       }
 
       const data = await res.json();
+      console.log("[stats] API response:", data);
       renderStats(data);
     } catch (error) {
-      console.warn("Stats API unavailable", error);
+      console.warn("[stats] API unavailable", error);
     }
   }
 
@@ -151,7 +113,7 @@
       const data = await res.json();
       renderRecentTx(Array.isArray(data) ? data : data.items);
     } catch (error) {
-      console.warn("Recent transactions API unavailable", error);
+      console.warn("[stats] Recent transactions API unavailable", error);
       renderRecentTx([]);
     }
   }
