@@ -1,41 +1,105 @@
-// Countdown logic
 (function () {
-  const els = {
-    days: document.getElementById("cdDays"),
-    hours: document.getElementById("cdHours"),
-    minutes: document.getElementById("cdMinutes"),
-    seconds: document.getElementById("cdSeconds"),
-    note: document.getElementById("countdownNote")
-  };
+  let nextSnapshotAtMs = null;
+  let serverOffsetMs = 0;
+  let countdownTimer = null;
+  let syncTimer = null;
 
-  let target = new Date(AIRDROP_CONFIG.nextRoundTimestamp).getTime();
-
-  function pad(n) {
-    return String(n).padStart(2, "0");
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
   }
 
-  function tick() {
-    const now = Date.now();
-    let diff = target - now;
+  function pad(value) {
+    return String(value).padStart(2, "0");
+  }
 
-    if (diff <= 0) {
-      // Round closed -> new round
-      target = now + AIRDROP_CONFIG.roundLengthMinutes * 60 * 1000;
-      if (els.note) els.note.textContent = "New airdrop round started!";
-      diff = target - now;
+  function renderCountdown(diffMs) {
+    const safeDiff = Math.max(0, diffMs);
+    const totalSeconds = Math.floor(safeDiff / 1000);
+
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    setText("days", pad(days));
+    setText("hours", pad(hours));
+    setText("minutes", pad(minutes));
+    setText("seconds", pad(seconds));
+  }
+
+  async function loadSchedule() {
+    if (!window.AIRDROP_CONFIG?.statsApiUrl) {
+      console.warn("Stats API URL not configured.");
+      return;
     }
 
-    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
-    const m = Math.floor((diff / (1000 * 60)) % 60);
-    const s = Math.floor((diff / 1000) % 60);
+    try {
+      const res = await fetch(window.AIRDROP_CONFIG.statsApiUrl, {
+        headers: { Accept: "application/json" }
+      });
 
-    if (els.days) els.days.textContent = pad(d);
-    if (els.hours) els.hours.textContent = pad(h);
-    if (els.minutes) els.minutes.textContent = pad(m);
-    if (els.seconds) els.seconds.textContent = pad(s);
+      if (!res.ok) {
+        throw new Error(`Stats API error: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      if (data.serverTime) {
+        serverOffsetMs = new Date(data.serverTime).getTime() - Date.now();
+      }
+
+      if (data.nextSnapshotAt) {
+        nextSnapshotAtMs = new Date(data.nextSnapshotAt).getTime();
+      }
+    } catch (error) {
+      console.warn("Countdown schedule unavailable", error);
+    }
   }
 
-  tick();
-  setInterval(tick, 1000);
+  async function syncAndRender() {
+    await loadSchedule();
+
+    if (!nextSnapshotAtMs) {
+      renderCountdown(0);
+      return;
+    }
+
+    const now = Date.now() + serverOffsetMs;
+    renderCountdown(nextSnapshotAtMs - now);
+  }
+
+  function startCountdownLoop() {
+    if (countdownTimer) clearInterval(countdownTimer);
+
+    countdownTimer = setInterval(async () => {
+      if (!nextSnapshotAtMs) {
+        renderCountdown(0);
+        return;
+      }
+
+      const now = Date.now() + serverOffsetMs;
+      const diff = nextSnapshotAtMs - now;
+
+      renderCountdown(diff);
+
+      if (diff <= 0) {
+        await syncAndRender();
+      }
+    }, 1000);
+  }
+
+  function startSyncLoop() {
+    if (syncTimer) clearInterval(syncTimer);
+
+    syncTimer = setInterval(async () => {
+      await syncAndRender();
+    }, 30000);
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    await syncAndRender();
+    startCountdownLoop();
+    startSyncLoop();
+  });
 })();
