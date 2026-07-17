@@ -36,16 +36,47 @@
   function renderStats(stats) {
     if (!stats) return;
 
-    // Főbb stat számlálók
-    animateCounter(document.getElementById("statHolders"), stats.totalHolders ?? 0, 0);
-    animateCounter(document.getElementById("statUSDS"),   stats.totalUsdcDistributed ?? 0, 2);
-    animateCounter(document.getElementById("statRounds"), stats.totalRounds ?? 0, 0);
-    animateCounter(document.getElementById("statAvg"),    stats.avgUsdcPerHolder ?? 0, 4);
+    animateCounter(
+      document.getElementById("statHolders"),
+      stats.totalHolders ?? 0,
+      0
+    );
 
-    // Mini stat számok (hero szekcióban)
-    animateCounter(document.getElementById("miniHolders"), stats.totalHolders ?? 0, 0);
-    animateCounter(document.getElementById("miniUSDC"),    stats.totalUsdcDistributed ?? 0, 2);
-    animateCounter(document.getElementById("miniRounds"),  stats.totalRounds ?? 0, 0);
+    animateCounter(
+      document.getElementById("statUsdc"),
+      stats.totalUsdcDistributed ?? 0,
+      2
+    );
+
+    animateCounter(
+      document.getElementById("statRounds"),
+      stats.totalRounds ?? 0,
+      0
+    );
+
+    animateCounter(
+      document.getElementById("statAvg"),
+      stats.avgUsdcPerHolder ?? 0,
+      4
+    );
+
+    animateCounter(
+      document.getElementById("miniHolders"),
+      stats.totalHolders ?? 0,
+      0
+    );
+
+    animateCounter(
+      document.getElementById("miniUsdc"),
+      stats.totalUsdcDistributed ?? 0,
+      2
+    );
+
+    animateCounter(
+      document.getElementById("miniRounds"),
+      stats.totalRounds ?? 0,
+      0
+    );
   }
 
   function renderRecentTx(txList) {
@@ -67,20 +98,26 @@
         <td>${tx.time ?? "-"}</td>
         <td>${tx.wallet ?? "-"}</td>
         <td>${Number(tx.amount ?? 0).toFixed(4)} USDC</td>
-        <td>${tx.tx ? `<a href="https://solscan.io/tx/${tx.tx}" target="_blank" rel="noopener">View</a>` : "-"}</td>
+        <td>
+          ${
+            tx.tx
+              ? `<a href="https://solscan.io/tx/${tx.tx}" target="_blank" rel="noopener">View</a>`
+              : "-"
+          }
+        </td>
       `;
       tbody.appendChild(tr);
     });
   }
 
   async function loadStats() {
-    if (!window.AIRDROP_CONFIG || !AIRDROP_CONFIG.statsApiUrl) {
+    if (!window.AIRDROP_CONFIG?.statsApiUrl) {
       console.warn("Stats API URL not configured.");
       return;
     }
 
     try {
-      const res = await fetch(AIRDROP_CONFIG.statsApiUrl, {
+      const res = await fetch(window.AIRDROP_CONFIG.statsApiUrl, {
         headers: { Accept: "application/json" }
       });
 
@@ -97,12 +134,12 @@
   }
 
   async function loadRecentTx() {
-    if (!window.AIRDROP_CONFIG || !AIRDROP_CONFIG.recentTxApiUrl) {
+    if (!window.AIRDROP_CONFIG?.recentTxApiUrl) {
       return;
     }
 
     try {
-      const res = await fetch(AIRDROP_CONFIG.recentTxApiUrl, {
+      const res = await fetch(window.AIRDROP_CONFIG.recentTxApiUrl, {
         headers: { Accept: "application/json" }
       });
 
