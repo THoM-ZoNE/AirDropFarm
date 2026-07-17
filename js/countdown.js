@@ -1,105 +1,52 @@
 (function () {
-  let nextSnapshotAtMs = null;
-  let serverOffsetMs = 0;
-  let countdownTimer = null;
-  let syncTimer = null;
+  const els = {
+    days:    document.getElementById("cdDays"),
+    hours:   document.getElementById("cdHours"),
+    minutes: document.getElementById("cdMinutes"),
+    seconds: document.getElementById("cdSeconds"),
+    note:    document.getElementById("countdownNote")
+  };
 
-  function setText(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value;
+  const STORAGE_KEY = "airdropfarm_countdown_target";
+  const roundMs = (window.AIRDROP_CONFIG?.roundLengthMinutes ?? 5) * 60 * 1000;
+
+  function getOrCreateTarget() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const t = parseInt(stored, 10);
+      if (t > Date.now()) return t;
+    }
+    const t = Date.now() + roundMs;
+    localStorage.setItem(STORAGE_KEY, String(t));
+    return t;
   }
 
-  function pad(value) {
-    return String(value).padStart(2, "0");
-  }
+  let target = getOrCreateTarget();
 
-  function renderCountdown(diffMs) {
-    const safeDiff = Math.max(0, diffMs);
-    const totalSeconds = Math.floor(safeDiff / 1000);
+  function pad(n) { return String(n).padStart(2, "0"); }
 
-    const days = Math.floor(totalSeconds / 86400);
-    const hours = Math.floor((totalSeconds % 86400) / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
+  function tick() {
+    const now = Date.now();
+    let diff = target - now;
 
-    setText("days", pad(days));
-    setText("hours", pad(hours));
-    setText("minutes", pad(minutes));
-    setText("seconds", pad(seconds));
-  }
-
-  async function loadSchedule() {
-    if (!window.AIRDROP_CONFIG?.statsApiUrl) {
-      console.warn("Stats API URL not configured.");
-      return;
+    if (diff <= 0) {
+      target = Date.now() + roundMs;
+      localStorage.setItem(STORAGE_KEY, String(target));
+      if (els.note) els.note.textContent = "New airdrop round started!";
+      diff = target - Date.now();
     }
 
-    try {
-      const res = await fetch(window.AIRDROP_CONFIG.statsApiUrl, {
-        headers: { Accept: "application/json" }
-      });
+    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const m = Math.floor((diff / (1000 * 60)) % 60);
+    const s = Math.floor((diff / 1000) % 60);
 
-      if (!res.ok) {
-        throw new Error(`Stats API error: ${res.status}`);
-      }
-
-      const data = await res.json();
-
-      if (data.serverTime) {
-        serverOffsetMs = new Date(data.serverTime).getTime() - Date.now();
-      }
-
-      if (data.nextSnapshotAt) {
-        nextSnapshotAtMs = new Date(data.nextSnapshotAt).getTime();
-      }
-    } catch (error) {
-      console.warn("Countdown schedule unavailable", error);
-    }
+    if (els.days)    els.days.textContent    = pad(d);
+    if (els.hours)   els.hours.textContent   = pad(h);
+    if (els.minutes) els.minutes.textContent = pad(m);
+    if (els.seconds) els.seconds.textContent = pad(s);
   }
 
-  async function syncAndRender() {
-    await loadSchedule();
-
-    if (!nextSnapshotAtMs) {
-      renderCountdown(0);
-      return;
-    }
-
-    const now = Date.now() + serverOffsetMs;
-    renderCountdown(nextSnapshotAtMs - now);
-  }
-
-  function startCountdownLoop() {
-    if (countdownTimer) clearInterval(countdownTimer);
-
-    countdownTimer = setInterval(async () => {
-      if (!nextSnapshotAtMs) {
-        renderCountdown(0);
-        return;
-      }
-
-      const now = Date.now() + serverOffsetMs;
-      const diff = nextSnapshotAtMs - now;
-
-      renderCountdown(diff);
-
-      if (diff <= 0) {
-        await syncAndRender();
-      }
-    }, 1000);
-  }
-
-  function startSyncLoop() {
-    if (syncTimer) clearInterval(syncTimer);
-
-    syncTimer = setInterval(async () => {
-      await syncAndRender();
-    }, 30000);
-  }
-
-  document.addEventListener("DOMContentLoaded", async () => {
-    await syncAndRender();
-    startCountdownLoop();
-    startSyncLoop();
-  });
+  tick();
+  setInterval(tick, 1000);
 })();
