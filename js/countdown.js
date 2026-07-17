@@ -7,33 +7,26 @@
     note:    document.getElementById("countdownNote")
   };
 
-  const STORAGE_KEY = "airdropfarm_countdown_target";
-  const roundMs = (window.AIRDROP_CONFIG?.roundLengthMinutes ?? 5) * 60 * 1000;
+  const API_URL = window.AIRDROP_CONFIG?.statsApiUrl ?? "/stats";
 
-  function getOrCreateTarget() {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const t = parseInt(stored, 10);
-      if (t > Date.now()) return t;
-    }
-    const t = Date.now() + roundMs;
-    localStorage.setItem(STORAGE_KEY, String(t));
-    return t;
-  }
-
-  let target = getOrCreateTarget();
+  // serverTime offset: server és kliens órajel különbsége
+  let serverOffset = 0;
+  let targetTs = null;
+  let ticker = null;
 
   function pad(n) { return String(n).padStart(2, "0"); }
 
-  function tick() {
-    const now = Date.now();
-    let diff = target - now;
+  function renderTick() {
+    const now = Date.now() + serverOffset;
+    let diff = targetTs - now;
 
     if (diff <= 0) {
-      target = Date.now() + roundMs;
-      localStorage.setItem(STORAGE_KEY, String(target));
-      if (els.note) els.note.textContent = "New airdrop round started!";
-      diff = target - Date.now();
+      // Visszaszámláló elérte a 0-t -> új schedule lekérés
+      diff = 0;
+      if (els.note) els.note.textContent = "Snapshot running… fetching next round";
+      clearInterval(ticker);
+      // Kis késleltetéssel újra lekéri
+      setTimeout(fetchSchedule, 3000);
     }
 
     const d = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -47,6 +40,48 @@
     if (els.seconds) els.seconds.textContent = pad(s);
   }
 
-  tick();
-  setInterval(tick, 1000);
+  function startTicker() {
+    if (ticker) clearInterval(ticker);
+    renderTick();
+    ticker = setInterval(renderTick, 1000);
+  }
+
+  async function fetchSchedule() {
+    try {
+      const resp = await fetch(API_URL, { cache: "no-store" });
+      if (!resp.ok) throw new Error("stats " + resp.status);
+      const data = await resp.json();
+
+      // serverTime alapján offset számítás
+      if (data.serverTime) {
+        serverOffset = data.serverTime - Date.now();
+      }
+
+      // nextSnapshotAt az elsődleges countdown cél
+      if (data.nextSnapshotAt) {
+        targetTs = data.nextSnapshotAt;
+        if (els.note) els.note.textContent = "Next snapshot: " + new Date(data.nextSnapshotAt).toUTCString();
+      } else {
+        // Fallback: ha a backend még nem adja nextSnapshotAt-t
+        if (!targetTs || targetTs <= Date.now() + serverOffset) {
+          targetTs = Date.now() + (window.AIRDROP_CONFIG?.roundLengthMinutes ?? 5) * 60 * 1000;
+          if (els.note) els.note.textContent = "Schedule sync pending…";
+        }
+      }
+
+      startTicker();
+    } catch (err) {
+      console.warn("[countdown] fetchSchedule error:", err);
+      // Fallback: lokális timer, hogy ne álljon meg a UI
+      if (!targetTs || targetTs <= Date.now()) {
+        targetTs = Date.now() + (window.AIRDROP_CONFIG?.roundLengthMinutes ?? 5) * 60 * 1000;
+      }
+      startTicker();
+      // Retry 30s múlva
+      setTimeout(fetchSchedule, 30_000);
+    }
+  }
+
+  // Inicializálás
+  fetchSchedule();
 })();

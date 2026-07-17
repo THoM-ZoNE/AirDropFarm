@@ -5,6 +5,7 @@ import { config } from "./lib/config.js";
 import { requireAdmin } from "./lib/adminAuth.js";
 import { createSnapshot } from "./services/snapshotService.js";
 import { distributeSnapshot } from "./services/distributionService.js";
+import { CronExpressionParser } from "cron-parser";
 import {
   registerRewardEvent,
   processPendingRewardEvent
@@ -57,7 +58,7 @@ app.post("/snapshots/:id/distribute", async (req, res) => {
       error: error instanceof Error ? error.message : "Unknown error"
     });
   }
-});
+});   
 
 app.get("/stats", async (_req, res) => {
   const sent = await prisma.distribution.findMany({
@@ -75,21 +76,41 @@ app.get("/stats", async (_req, res) => {
   const holders = ownerSet.size;
   const rounds = await prisma.snapshot.count();
 
-  // PAYOUT_TOKEN_DECIMALS convert (default 6 = USDC)
   const decimals = 6;
   const totalUsdc = Number(totalPayoutRaw) / 10 ** decimals;
   const avgUsdc = holders === 0 ? 0 : totalUsdc / holders;
 
+  const now = new Date();
+  let nextSnapshotAt: number | null = null;
+  let nextDistributionAt: number | null = null;
+
+  try {
+    const snap = CronExpressionParser.parse(config.cronSnapshot, {
+      currentDate: now
+    });
+    nextSnapshotAt = snap.next().toDate().getTime();
+  } catch {}
+
+  try {
+    const dist = CronExpressionParser.parse(config.cronDistribute, {
+      currentDate: now
+    });
+    nextDistributionAt = dist.next().toDate().getTime();
+  } catch {}
+
   res.json({
     totalHolders: holders,
     totalRounds: rounds,
-    // frontend-compatible fields (stats.js waiting for these names)
     totalUsdcDistributed: totalUsdc,
     avgUsdcPerHolder: avgUsdc,
-    // raw values are also available, if needed
     totalPayoutDistributedRaw: totalPayoutRaw.toString(),
     avgPayoutRawPerHolder:
-      holders === 0 ? "0" : (totalPayoutRaw / BigInt(holders)).toString()
+      holders === 0 ? "0" : (totalPayoutRaw / BigInt(holders)).toString(),
+    serverTime: now.getTime(),
+    nextSnapshotAt,
+    nextDistributionAt,
+    snapshotCron: config.cronSnapshot,
+    distributionCron: config.cronDistribute
   });
 });
 

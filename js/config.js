@@ -1,5 +1,5 @@
 window.AIRDROP_CONFIG = {
   roundLengthMinutes: 5,
-  statsApiUrl: "/api/stats",
+  statsApiUrl: "/stats",
   recentTxApiUrl: null
 };
