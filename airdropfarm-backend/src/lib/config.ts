@@ -40,7 +40,23 @@ const schema = z.object({
   CRON_DISTRIBUTE: z.string().default("10 * * * *"),
 
   PORT: z.coerce.number().int().default(8787),
-  ADMIN_API_KEY: z.string().min(6)
+  ADMIN_API_KEY: z.string().min(6),
+
+  CLAIM_ENABLED: z.string().optional().default("false"),
+  CLAIM_CRON: z.string().default("*/2 * * * *"),
+  CLAIM_PRIORITY_FEE: z.coerce.number().default(0.000001),
+  CLAIM_DRY_RUN: z.string().optional().default("true"),
+  PUMPPORTAL_TRADE_LOCAL_URL: z
+    .string()
+    .url()
+    .default("https://pumpportal.fun/api/trade-local"),
+  CREATOR_WALLET_PUBLIC_KEY: z.string().optional().default(""),
+  CREATOR_WALLET_PRIVATE_KEY: z.string().optional().default(""),
+  CLAIM_MIN_RAW: z.coerce.bigint().default(1_000_000n),
+  CLAIM_MINT: z
+    .string()
+    .default("So11111111111111111111111111111111111111112"),
+  CLAIM_LOCK_TTL_MS: z.coerce.number().default(120000)
 });
 
 const env = schema.parse(process.env);
@@ -60,6 +76,16 @@ if (env.BUYBACK_BPS > 0 && !env.BUYBACK_WALLET_ADDRESS) {
   throw new Error(
     "BUYBACK_WALLET_ADDRESS is required when BUYBACK_BPS is greater than zero."
   );
+}
+
+if (env.CLAIM_ENABLED === "true") {
+  if (!env.CREATOR_WALLET_PUBLIC_KEY) {
+    throw new Error("CREATOR_WALLET_PUBLIC_KEY is required when CLAIM_ENABLED=true");
+  }
+
+  if (!env.CREATOR_WALLET_PRIVATE_KEY) {
+    throw new Error("CREATOR_WALLET_PRIVATE_KEY is required when CLAIM_ENABLED=true");
+  }
 }
 
 export const config = {
@@ -103,5 +129,16 @@ export const config = {
   cronDistribute: env.CRON_DISTRIBUTE,
 
   port: env.PORT,
-  adminApiKey: env.ADMIN_API_KEY
+  adminApiKey: env.ADMIN_API_KEY,
+
+  claimEnabled: env.CLAIM_ENABLED === "true",
+  claimCron: env.CLAIM_CRON,
+  claimPriorityFee: env.CLAIM_PRIORITY_FEE,
+  claimDryRun: env.CLAIM_DRY_RUN === "true",
+  pumpPortalTradeLocalUrl: env.PUMPPORTAL_TRADE_LOCAL_URL,
+  creatorWalletPublicKey: env.CREATOR_WALLET_PUBLIC_KEY,
+  creatorWalletPrivateKey: env.CREATOR_WALLET_PRIVATE_KEY,
+  claimMinRaw: env.CLAIM_MIN_RAW,
+  claimMint: env.CLAIM_MINT,
+  claimLockTtlMs: env.CLAIM_LOCK_TTL_MS
 };

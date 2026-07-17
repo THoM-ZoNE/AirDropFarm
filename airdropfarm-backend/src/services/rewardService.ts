@@ -3,6 +3,23 @@ import { config } from "../lib/config.js";
 import { createSnapshot } from "./snapshotService.js";
 import { distributeSnapshot } from "./distributionService.js";
 
+export async function registerClaimedRewardEvent(input: {
+  sourceTx: string;
+  grossPayoutRaw: bigint;
+  notes?: string;
+}) {
+  return prisma.rewardEvent.create({
+    data: {
+      source: "pumpfun_claim",
+      sourceTx: input.sourceTx,
+      grossPayoutRaw: input.grossPayoutRaw,
+      payoutMint: config.payoutMint,
+      status: "pending",
+      notes: input.notes ?? "Automatic creator fee claim"
+    }
+  });
+}
+
 export async function registerRewardEvent(input: {
   source: string;
   grossPayoutRaw: bigint;
@@ -18,11 +35,11 @@ export async function registerRewardEvent(input: {
   return prisma.rewardEvent.create({
     data: {
       source: input.source,
-      sourceTx: input.sourceTx,
+      sourceTx: input.sourceTx ?? null,
       grossPayoutRaw: input.grossPayoutRaw,
       payoutMint: config.payoutMint,
       status: "pending",
-      notes: input.notes
+      notes: input.notes ?? null
     }
   });
 }
