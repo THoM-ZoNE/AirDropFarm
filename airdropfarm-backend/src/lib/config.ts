@@ -56,7 +56,12 @@ const schema = z.object({
   CLAIM_MINT: z
     .string()
     .default("So11111111111111111111111111111111111111112"),
-  CLAIM_LOCK_TTL_MS: z.coerce.number().default(120000)
+  CLAIM_LOCK_TTL_MS: z.coerce.number().default(120000),
+  USDC_MINT: z.string().min(32),
+  JUPITER_QUOTE_URL: z.string().url().default("https://quote-api.jup.ag/v6/quote"),
+  JUPITER_SWAP_URL: z.string().url().default("https://quote-api.jup.ag/v6/swap"),
+  SWAP_SLIPPAGE_BPS: z.coerce.number().int().min(1).max(5000).default(100),
+  SWAP_MIN_SOL_RAW: z.coerce.bigint().default(1_000_000n)
 });
 
 const env = schema.parse(process.env);
@@ -140,5 +145,11 @@ export const config = {
   creatorWalletPrivateKey: env.CREATOR_WALLET_PRIVATE_KEY,
   claimMinRaw: env.CLAIM_MIN_RAW,
   claimMint: env.CLAIM_MINT,
-  claimLockTtlMs: env.CLAIM_LOCK_TTL_MS
+  claimLockTtlMs: env.CLAIM_LOCK_TTL_MS,
+
+  usdcMint: env.USDC_MINT,
+  jupiterQuoteUrl: env.JUPITER_QUOTE_URL,
+  jupiterSwapUrl: env.JUPITER_SWAP_URL,
+  swapSlippageBps: env.SWAP_SLIPPAGE_BPS,
+  swapMinSolRaw: env.SWAP_MIN_SOL_RAW
 };
