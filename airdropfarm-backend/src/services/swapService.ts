@@ -2,8 +2,10 @@ import bs58 from "bs58";
 import {
   Connection,
   Keypair,
+  PublicKey,
   VersionedTransaction
 } from "@solana/web3.js";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { config } from "../lib/config.js";
 
 const WSOL_MINT = "So11111111111111111111111111111111111111112";
@@ -35,13 +37,27 @@ type JupiterSwapResponse = {
   prioritizationFeeLamports?: number;
 };
 
+async function getTokenBalanceRawOrZero(tokenAccount: PublicKey): Promise<bigint> {
+  try {
+    const balance = await connection.getTokenAccountBalance(tokenAccount, "confirmed");
+    return BigInt(balance.value.amount);
+  } catch {
+    return 0n;
+  }
+}
+
 export async function swapSolToUsdc(inputAmountRaw: bigint) {
   if (inputAmountRaw <= 0n) {
     throw new Error("swapSolToUsdc inputAmountRaw must be greater than zero");
   }
 
   const keypair = getCreatorKeypair();
-  const userPublicKey = keypair.publicKey.toBase58();
+  const owner = keypair.publicKey;
+  const userPublicKey = owner.toBase58();
+  const usdcMint = new PublicKey(config.usdcMint);
+
+  const usdcAta = getAssociatedTokenAddressSync(usdcMint, owner);
+  const usdcBeforeRaw = await getTokenBalanceRawOrZero(usdcAta);
 
   const quoteUrl = new URL(config.jupiterQuoteUrl);
   quoteUrl.searchParams.set("inputMint", WSOL_MINT);
@@ -117,13 +133,19 @@ export async function swapSolToUsdc(inputAmountRaw: bigint) {
     "confirmed"
   );
 
+  const usdcAfterRaw = await getTokenBalanceRawOrZero(usdcAta);
+  const actualOutRaw = usdcAfterRaw > usdcBeforeRaw ? usdcAfterRaw - usdcBeforeRaw : 0n;
+
   return {
     ok: true,
     signature,
     inputMint: WSOL_MINT,
     outputMint: config.usdcMint,
+    usdcAta: usdcAta.toBase58(),
     inAmountRaw: inputAmountRaw.toString(),
-    outAmountRaw: quote.outAmount,
-    quote
+    quotedOutAmountRaw: quote.outAmount,
+    actualOutAmountRaw: actualOutRaw.toString(),
+    usdcBeforeRaw: usdcBeforeRaw.toString(),
+    usdcAfterRaw: usdcAfterRaw.toString()
   };
 }

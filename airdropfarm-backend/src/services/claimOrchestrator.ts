@@ -101,7 +101,7 @@ export async function claimAndRegisterRewardIfAny() {
     }
 
     const swap = await swapSolToUsdc(swappableRaw);
-    const usdcRaw = BigInt(swap.outAmountRaw);
+    const usdcRaw = BigInt(swap.actualOutAmountRaw);
 
     if (usdcRaw < config.minRewardPayoutRaw) {
       return {
