@@ -7,7 +7,7 @@
     note: document.getElementById("countdownNote")
   };
 
-  const API_URL = window.AIRDROP_CONFIG?.statsApiUrl ?? "/stats";
+  const API_URL = window.AIRDROP_CONFIG?.scheduleApiUrl ?? "/schedule";
 
   let serverOffset = 0;
   let targetTs = null;
@@ -20,23 +20,19 @@
 
   function setDisplay(diffMs) {
     const safe = Math.max(0, diffMs);
-
     const d = Math.floor(safe / (1000 * 60 * 60 * 24));
     const h = Math.floor((safe / (1000 * 60 * 60)) % 24);
     const m = Math.floor((safe / (1000 * 60)) % 60);
     const s = Math.floor((safe / 1000) % 60);
 
-    if (els.days) els.days.textContent = pad(d);
-    if (els.hours) els.hours.textContent = pad(h);
+    if (els.days)    els.days.textContent    = pad(d);
+    if (els.hours)   els.hours.textContent   = pad(h);
     if (els.minutes) els.minutes.textContent = pad(m);
     if (els.seconds) els.seconds.textContent = pad(s);
   }
 
   function stopTicker() {
-    if (ticker) {
-      clearInterval(ticker);
-      ticker = null;
-    }
+    if (ticker) { clearInterval(ticker); ticker = null; }
   }
 
   function scheduleRefresh(ms = 5000) {
@@ -45,10 +41,7 @@
   }
 
   function renderTick() {
-    if (!targetTs) {
-      setDisplay(0);
-      return;
-    }
+    if (!targetTs) { setDisplay(0); return; }
 
     const now = Date.now() + serverOffset;
     const diff = targetTs - now;
@@ -57,7 +50,7 @@
       setDisplay(0);
       if (els.note) els.note.textContent = "Snapshot running… fetching next round";
       stopTicker();
-      scheduleRefresh(3000);
+      scheduleRefresh(4000);
       return;
     }
 
@@ -73,7 +66,7 @@
   async function fetchSchedule() {
     try {
       const resp = await fetch(API_URL, { cache: "no-store" });
-      if (!resp.ok) throw new Error("stats " + resp.status);
+      if (!resp.ok) throw new Error("schedule " + resp.status);
 
       const data = await resp.json();
 
@@ -81,39 +74,30 @@
         serverOffset = data.serverTime - Date.now();
       }
 
-      if (typeof data.nextSnapshotAt === "number" && data.nextSnapshotAt > 0) {
+      if (typeof data.nextSnapshotAt === "number" && data.nextSnapshotAt > Date.now() - 60_000) {
         targetTs = data.nextSnapshotAt;
 
         if (els.note) {
-          const localText = new Date(data.nextSnapshotAt).toLocaleString();
-          els.note.textContent = `Next snapshot: ${localText}`;
+          els.note.textContent = "Next snapshot: " + new Date(data.nextSnapshotAt).toLocaleString("hu-HU");
         }
 
         startTicker();
         return;
       }
 
+      // Backend érkezett de nem volt érvényes nextSnapshotAt
       targetTs = null;
       stopTicker();
       setDisplay(0);
-
-      if (els.note) {
-        els.note.textContent = "Waiting for backend schedule…";
-      }
-
-      scheduleRefresh(10000);
+      if (els.note) els.note.textContent = "Waiting for backend schedule…";
+      scheduleRefresh(10_000);
     } catch (err) {
       console.warn("[countdown] fetchSchedule error:", err);
-
       targetTs = null;
       stopTicker();
       setDisplay(0);
-
-      if (els.note) {
-        els.note.textContent = "Schedule unavailable… retrying";
-      }
-
-      scheduleRefresh(10000);
+      if (els.note) els.note.textContent = "Schedule unavailable… retrying";
+      scheduleRefresh(15_000);
     }
   }
 
